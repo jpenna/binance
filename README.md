@@ -62,7 +62,6 @@ binanceRest.allOrders('BNBBTC', (err, data) => {
  */
 const binanceWS = new api.BinanceWS({
     beautify: false,
-    verbose: true,
     retryOptions: { // Parameters to use with retry
       forever: true, // Don't stop retrying
       factor: 1.3, // Increase timeout factor
@@ -134,7 +133,7 @@ When connected, a single event listener is added to the Websocket `message` even
 
 # Verbose
 
-By default, `verbose` is set to `true`, but you need to enable it on using ENV vars.
+We use `debug` (https://github.com/visionmedia/debug) to log messages for Websocket connections. If you want enable it add the environment variable `DEBUG='binanceLib`.
 
 ```sh
 "DEBUG='binanceLib' node script.js",
