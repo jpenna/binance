@@ -15,10 +15,10 @@ const binanceRest = new api.BinanceRest({
     secret: 'api-secret', // Same for this
     timeout: 15000, // Optional, defaults to 15000, is the request time out in milliseconds
     recvWindow: 10000, // Optional, defaults to 5000, increase if you're getting timestamp errors
-    disableBeautification: false,
+    beautify: false,
     /*
-     * Optional, default is false. Binance's API returns objects with lots of one letter keys.  By
-     * default those keys will be replaced with more descriptive, longer ones.
+     * Optional, default is false. Binance's API returns objects with lots of one letter keys.
+     * These keys can be replaced with more descriptive, longer ones.
      */
     handleDrift: false
     /* Optional, default is false.  If turned on, the library will attempt to handle any drift of
@@ -56,9 +56,22 @@ binanceRest.allOrders('BNBBTC', (err, data) => {
  *
  * Each call to onXXXX initiates a new websocket for the specified route, and calls your callback with
  * the payload of each message received.  Each call to onXXXX returns the instance of the websocket
- * client if you want direct access(https://www.npmjs.com/package/ws).
+ * client if you want direct access(https://www.npmjs.com/package/ws). The instance of the websocket
+ * contains the callback in the property `aInstance.bnbEventHandler`, so you can change it later by
+ * just replacing the function pointed by this property.
  */
-const binanceWS = new api.BinanceWS(true); // Argument specifies whether the responses should be beautified, defaults to true
+const binanceWS = new api.BinanceWS({
+    beautify: false,
+    verbose: true,
+    retryOptions: { // Parameters to use with retry
+      forever: true, // Don't stop retrying
+      factor: 1.3, // Increase timeout factor
+      minTimeout: 300, 
+      maxTimeout: 20 * 1000, // 20 sec
+      heartbeatTimeout: 30000, // Check connection every 30 seconds by default
+    },
+    ...options,
+  }); // Argument specifies whether the responses should be beautified, defaults to true
 
 binanceWS.onDepthUpdate('BNBBTC', (data) => {
     console.log(data);
@@ -113,6 +126,18 @@ binanceWS.onUserData(binanceRest, (data) => {
     .then((ws) => {
         // websocket instance available here
     });
+```
+
+# Retry
+
+When connected, a single event listener is added to the Websocket `message` event which flags the connection as running. Every `heartbeatTimeout` seconds (30 seconds by default) this flag is checked, returned to `false` and the "trigger once" event listener is added again. If no message was received in the last `heartbeatTimeout` seconds, the Websocket will try reconnecting.
+
+# Verbose
+
+By default, `verbose` is set to `true`, but you need to enable it on using ENV vars.
+
+```sh
+"DEBUG='binanceLib' node script.js",
 ```
 
 # REST APIs
